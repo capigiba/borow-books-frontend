@@ -2,34 +2,18 @@ import React, { useState, useEffect } from 'react';
 import {
     Container,
     Typography,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Checkbox,
-    ListItemText,
-    Button,
-    Grid,
-    TextField,
-    IconButton,
-    Table,
-    TableHead,
-    TableRow,
-    TableCell,
-    TableBody,
     Paper,
-    CircularProgress,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    Snackbar,
-    Alert,
     Box,
     Stack,
 } from '@mui/material';
-import { AddCircle, RemoveCircle, ExpandMore } from '@mui/icons-material';
 import { fetchBooks, fetchAuthors } from '../lib/api';
 import { useRouter } from 'next/router';
+import FieldVisibilitySelector from '../components/FieldVisibilitySelector';
+import FilterManager from '../components/FilterManager';
+import SortManager from '../components/SortManager';
+import ActionButtons from '../components/ActionButtons';
+import DataTable from '../components/DataTable';
+import NotificationSnackbar from '../components/NotificationSnackbar';
 
 interface Book {
     id: number;
@@ -52,7 +36,7 @@ const filterOperators = [
     { label: 'Greater Than or Equal', value: 'gte' },
     { label: 'Less Than', value: 'lt' },
     { label: 'Less Than or Equal', value: 'lte' },
-    { label: 'Contains', value: 'ilike' }, // 'ilike' for case-insensitive partial matches
+    { label: 'Contains', value: 'ilike' },
 ];
 const sortOrders = [
     { label: 'Ascending', value: 'asc' },
@@ -138,11 +122,8 @@ const BooksPage: React.FC = () => {
         setSorts(newSorts);
     };
 
-    const handleFieldVisibilityChange = (event: any) => {
-        const {
-            target: { value },
-        } = event;
-        setSelectedFields(typeof value === 'string' ? value.split(',') : value);
+    const handleFieldVisibilityChange = (fields: string[]) => {
+        setSelectedFields(fields);
     };
 
     const handleApplyFilters = () => {
@@ -175,265 +156,72 @@ const BooksPage: React.FC = () => {
             <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
                 <Stack spacing={2}>
                     {/* Field Visibility */}
-                    <Accordion defaultExpanded>
-                        <AccordionSummary expandIcon={<ExpandMore />}>
-                            <Typography variant="h6">Field Visibility</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <FormControl fullWidth variant="outlined" margin="normal">
-                                <InputLabel id="fields-to-display-label">Fields to Display</InputLabel>
-                                <Select
-                                    labelId="fields-to-display-label"
-                                    id="fields-to-display"
-                                    multiple
-                                    value={selectedFields}
-                                    onChange={handleFieldVisibilityChange}
-                                    label="Fields to Display"
-                                    renderValue={(selected) => (selected as string[]).join(', ')}
-                                >
-                                    {availableFields.map((field) => (
-                                        <MenuItem key={field} value={field}>
-                                            <Checkbox checked={selectedFields.indexOf(field) > -1} />
-                                            <ListItemText primary={field.charAt(0).toUpperCase() + field.slice(1)} />
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </AccordionDetails>
-                    </Accordion>
+                    <FieldVisibilitySelector
+                        availableFields={availableFields}
+                        selectedFields={selectedFields}
+                        onChange={handleFieldVisibilityChange}
+                        label="Fields to Display"
+                    />
 
                     {/* Filters */}
-                    <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMore />}>
-                            <Typography variant="h6">Filters</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Stack spacing={2}>
-                                {filters.map((filter, index) => (
-                                    <Grid container spacing={2} alignItems="center" key={index}>
-                                        <Grid item xs={12} sm={4}>
-                                            <FormControl fullWidth variant="outlined" margin="normal">
-                                                <InputLabel id={`filter-field-label-${index}`}>Field</InputLabel>
-                                                <Select
-                                                    labelId={`filter-field-label-${index}`}
-                                                    id={`filter-field-${index}`}
-                                                    value={filter.field}
-                                                    onChange={(e) => handleFilterChange(index, 'field', e.target.value)}
-                                                    label="Field"
-                                                >
-                                                    {availableFields.map((field) => (
-                                                        <MenuItem key={field} value={field}>
-                                                            {field.charAt(0).toUpperCase() + field.slice(1)}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} sm={4}>
-                                            <FormControl fullWidth variant="outlined" margin="normal">
-                                                <InputLabel id={`filter-operator-label-${index}`}>Operator</InputLabel>
-                                                <Select
-                                                    labelId={`filter-operator-label-${index}`}
-                                                    id={`filter-operator-${index}`}
-                                                    value={filter.operator}
-                                                    onChange={(e) => handleFilterChange(index, 'operator', e.target.value)}
-                                                    label="Operator"
-                                                >
-                                                    {filterOperators.map((op) => (
-                                                        <MenuItem key={op.value} value={op.value}>
-                                                            {op.label}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} sm={3}>
-                                            <TextField
-                                                fullWidth
-                                                variant="outlined"
-                                                margin="normal"
-                                                label="Value"
-                                                value={filter.value}
-                                                onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={1}>
-                                            <IconButton color="error" onClick={() => handleRemoveFilter(index)}>
-                                                <RemoveCircle />
-                                            </IconButton>
-                                        </Grid>
-                                    </Grid>
-                                ))}
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<AddCircle />}
-                                    onClick={handleAddFilter}
-                                    color="primary"
-                                >
-                                    Add Filter
-                                </Button>
-                            </Stack>
-                        </AccordionDetails>
-                    </Accordion>
+                    <FilterManager
+                        availableFields={availableFields}
+                        filterOperators={filterOperators}
+                        filters={filters}
+                        onAdd={handleAddFilter}
+                        onRemove={handleRemoveFilter}
+                        onChange={handleFilterChange}
+                    />
 
                     {/* Sorting */}
-                    <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMore />}>
-                            <Typography variant="h6">Sorting</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Stack spacing={2}>
-                                {sorts.map((sort, index) => (
-                                    <Grid container spacing={2} alignItems="center" key={index}>
-                                        <Grid item xs={12} sm={5}>
-                                            <FormControl fullWidth variant="outlined" margin="normal">
-                                                <InputLabel id={`sort-field-label-${index}`}>Field</InputLabel>
-                                                <Select
-                                                    labelId={`sort-field-label-${index}`}
-                                                    id={`sort-field-${index}`}
-                                                    value={sort.field}
-                                                    onChange={(e) => handleSortChange(index, 'field', e.target.value)}
-                                                    label="Field"
-                                                >
-                                                    {availableFields.map((field) => (
-                                                        <MenuItem key={field} value={field}>
-                                                            {field.charAt(0).toUpperCase() + field.slice(1)}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} sm={5}>
-                                            <FormControl fullWidth variant="outlined" margin="normal">
-                                                <InputLabel id={`sort-order-label-${index}`}>Order</InputLabel>
-                                                <Select
-                                                    labelId={`sort-order-label-${index}`}
-                                                    id={`sort-order-${index}`}
-                                                    value={sort.order}
-                                                    onChange={(e) => handleSortChange(index, 'order', e.target.value)}
-                                                    label="Order"
-                                                >
-                                                    {sortOrders.map((order) => (
-                                                        <MenuItem key={order.value} value={order.value}>
-                                                            {order.label}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} sm={2}>
-                                            <IconButton color="error" onClick={() => handleRemoveSort(index)}>
-                                                <RemoveCircle />
-                                            </IconButton>
-                                        </Grid>
-                                    </Grid>
-                                ))}
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<AddCircle />}
-                                    onClick={handleAddSort}
-                                    color="primary"
-                                >
-                                    Add Sort
-                                </Button>
-                            </Stack>
-                        </AccordionDetails>
-                    </Accordion>
+                    <SortManager
+                        availableFields={availableFields}
+                        sortOrders={sortOrders}
+                        sorts={sorts}
+                        onAdd={handleAddSort}
+                        onRemove={handleRemoveSort}
+                        onChange={handleSortChange}
+                    />
                 </Stack>
 
                 {/* Action Buttons */}
-                <Box mt={3}>
-                    <Grid container spacing={2}>
-                        <Grid item>
-                            <Button variant="contained" color="primary" onClick={handleApplyFilters}>
-                                Apply
-                            </Button>
-                        </Grid>
-                        <Grid item>
-                            <Button variant="outlined" color="secondary" onClick={handleResetFilters}>
-                                Reset
-                            </Button>
-                        </Grid>
-                    </Grid>
-                </Box>
+                <ActionButtons onApply={handleApplyFilters} onReset={handleResetFilters} />
             </Paper>
 
             {/* Display Books */}
             <Paper elevation={3} sx={{ p: 3 }}>
-                {loading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-                        <CircularProgress />
-                    </Box>
-                ) : error ? (
-                    <Typography color="error" align="center">
-                        {error}
-                    </Typography>
-                ) : books.length === 0 ? (
-                    <Typography align="center">No books found.</Typography>
-                ) : (
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                {selectedFields.map((field) => (
-                                    <TableCell key={field} sx={{ fontWeight: 'bold' }}>
-                                        {field.toUpperCase()}
-                                    </TableCell>
-                                ))}
-                                <TableCell sx={{ fontWeight: 'bold' }}>ACTIONS</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {books.map((book) => (
-                                <TableRow key={book.id}>
-                                    {selectedFields.map((field) => (
-                                        <TableCell key={field}>
-                                            {field === 'author_id' ? getAuthorName(book.author_id) : (book as any)[field]}
-                                        </TableCell>
-                                    ))}
-                                    <TableCell>
-                                        <Button
-                                            variant="outlined"
-                                            color="primary"
-                                            onClick={() => handleEdit(book.id)}
-                                            size="small"
-                                        >
-                                            Edit
-                                        </Button>
-                                        {/* Optionally, add a Delete button here */}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
+                <DataTable<Book>
+                    data={books}
+                    selectedFields={selectedFields}
+                    loading={loading}
+                    error={error}
+                    getDisplayValue={(item, field) => {
+                        if (field === 'author_id') return getAuthorName(item.author_id);
+                        return (item as any)[field];
+                    }}
+                    onEdit={handleEdit}
+                    emptyMessage="No books found."
+                />
             </Paper>
 
-            {/* Snackbar for success messages */}
-            <Snackbar
+            {/* Notification Snackbars */}
+            <NotificationSnackbar
                 open={!!successMessage}
-                autoHideDuration={3000}
+                message={successMessage || ''}
+                severity="success"
                 onClose={() => setSuccessMessage(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
-                    {successMessage}
-                </Alert>
-            </Snackbar>
+                autoHideDuration={3000}
+            />
 
-            {/* Snackbar for error messages */}
-            <Snackbar
+            <NotificationSnackbar
                 open={!!error}
-                autoHideDuration={6000}
+                message={error || ''}
+                severity="error"
                 onClose={() => setError(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
-                    {error}
-                </Alert>
-            </Snackbar>
+                autoHideDuration={6000}
+            />
         </Container>
     );
-
 };
 
 export default BooksPage;

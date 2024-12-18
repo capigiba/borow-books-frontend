@@ -1,5 +1,3 @@
-// pages/authors/manage.tsx
-
 import React, { useState, useEffect } from 'react';
 import {
     Container,
